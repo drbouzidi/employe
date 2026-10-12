@@ -17,8 +17,8 @@ public class EmployeService {
     private ModelMapper mapper;
 
     public EmployeReponse getEmployeById(int id) {
-        Optional<Employe> employee = employeRepo.findById(id);
-        EmployeReponse employeResponse = mapper.map(employee, EmployeReponse.class);
+        Optional<Employe> employe = employeRepo.findById(id);
+        EmployeReponse employeResponse = mapper.map(employe, EmployeReponse.class);
         return employeResponse;
     }
 }
