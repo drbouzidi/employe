@@ -1,15 +1,10 @@
 name: Java CI with Maven
-
 on:
   push:
     branches: main
-
-
 jobs:
   build:
-
     runs-on: ubuntu-latest
-
     steps:
       - name: Vérification du code source
         uses: actions/checkout@v4
@@ -18,4 +13,6 @@ jobs:
         with:
           java-version: '17'
           distribution: 'temurin'
+      - name: Build & Test
+        run: mvn clean verify sonar:sonar -Dsonar.token=${{ secrets.SONAR_TOKEN }}
 

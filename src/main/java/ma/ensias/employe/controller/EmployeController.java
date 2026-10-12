@@ -12,13 +12,5 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 public class EmployeController {
 
-    @Autowired
-    private EmployeService employeService;
-
-    @GetMapping("/employes/{id}")
-    private ResponseEntity<EmployeReponse> getEmployeDetails(@PathVariable("id") int id) {
-        EmployeReponse employe = employeService.getEmployeById(id);
-        return ResponseEntity.status(HttpStatus.OK).body(employe);
-    }
-
+ 
 }
