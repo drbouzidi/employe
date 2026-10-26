@@ -3,6 +3,13 @@ on:
   push:
     branches:
       - main
+
+env:
+  AWS_REGION: us-east-1                       # set this to your preferred AWS region, e.g. us-west-1
+  ECR_REPOSITORY: devsecops/employe-service           # set this to your Amazon ECR repository name
+
+
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -21,7 +28,7 @@ jobs:
           distribution: 'temurin'
           cache: 'maven'
 
-      # 3. Configuration de Java 21 (Requis par SonarQube)
+      # 4. Configuration de Java 21 (Requis par SonarQube)
       - name: Set up JDK 21
         uses: actions/setup-java@v4
         with:
@@ -32,7 +39,7 @@ jobs:
 
 
       # Étape de Build & Test mise à jour
-      # 3. Compilation, exécution des tests connectés à RDS et analyse SonarQube
+      # 5. Compilation, exécution des tests connectés à RDS et analyse SonarQube
       - name: Build, Test & Sonar Analysis
         env:
           # Injection des secrets de votre base de données RDS
@@ -43,9 +50,33 @@ jobs:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
         run: mvn clean verify sonar:sonar -Dsonar.token=${{ secrets.SONAR_TOKEN }}
 
+      # Étape de deploiment au niveau de AWS ECR
+      # ce bloc permet de se connecter à AWS via les paramètres access-ky, secret-key
+      #tout en spécifiant notre région indiquée par nos variable d'env.
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws_session_token: ${{ secrets.AWS_SECRET_SESSION_TOKEN }}
+          aws-region: ${{ env.AWS_REGION }}
 
-      
-      
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v1
+
+      - name: Build, tag, and push image to Amazon ECR
+        id: build-image
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          IMAGE_TAG: latest
+        run: |
+          # Build a docker container and
+          # push it to ECR so that it can
+          # be deployed to ECS.
+          docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+          echo "image=$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG" >> $GITHUB_OUTPUT
 
 
 
