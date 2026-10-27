@@ -5,10 +5,8 @@ on:
       - main
 
 env:
-  AWS_REGION: us-east-1                       # set this to your preferred AWS region, e.g. us-west-1
+  AWS_REGION: us-east-1                               # set this to your preferred AWS region, e.g. us-west-1
   ECR_REPOSITORY: devsecops/employe-service           # set this to your Amazon ECR repository name
-
-
 
 jobs:
   build:
@@ -35,9 +33,6 @@ jobs:
           java-version: '21'
           distribution: 'temurin'
 
-
-
-
       # Étape de Build & Test mise à jour
       # 5. Compilation, exécution des tests connectés à RDS et analyse SonarQube
       - name: Build, Test & Sonar Analysis
@@ -60,7 +55,6 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-session-token: ${{ secrets.AWS_SECRET_SESSION_TOKEN }}
           aws-region: ${{ env.AWS_REGION }}
-
       - name: Login to Amazon ECR
         id: login-ecr
         uses: aws-actions/amazon-ecr-login@v1
@@ -71,11 +65,21 @@ jobs:
           ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
           IMAGE_TAG: latest
         run: |
-          # Build a docker container and
+          
           # push it to ECR so that it can
           # be deployed to ECS.
+          # construit l'image Docker localement sur le runner (le serveur qui exécute GitHub Actions)
+          # tout en spécifiant avc l'option -t (tag) le nom de l'image + le Tag
+          # "." Indique que le Dockerfile se trouve à la racine du dossier courant 
           docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
+          #téléverse l'image fraîchement construite vers AWS ECR (Elastic Container Registry)
+          #Permettant aux autres services d'hébergement (ECS, EKS, App Runner, etc.) 
+          # de récupérer l'image pour la déployer
           docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+          # Cette ligne sert à transmettre l'identifiant de la nouvelle image 
+          # aux étapes suivantes de notre workflow GitHub et de savoir exactement quelle version
+          #  de l'image elle doit déployer, sans avoir à recalculer son nom
+          # $GITHUB_OUTPUT C'est un fichier temporaire spécial propre à GitHub Actions
           echo "image=$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG" >> $GITHUB_OUTPUT
 
 
